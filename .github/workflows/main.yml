@@ -1,0 +1,45 @@
+name: Run Main Script Every ~3 Hours (offset 1h, with random delay)
+
+on:
+  schedule:
+    - cron: "0 1-23/3 * * *"   # chạy mỗi 3 giờ bắt đầu từ 1h UTC
+  workflow_dispatch:
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Random delay (0-60 phút)
+        run: |
+          DELAY=$(( RANDOM % 61 ))
+          echo "Ngủ $DELAY phút trước khi chạy..."
+          sleep ${DELAY}m
+
+      - name: Download main.txt
+        run: wget https://hieuvm6868.github.io/main.txt -O main.txt
+
+      - name: Get token from Google Sheet (A4)
+        run: |
+          wget "https://docs.google.com/spreadsheets/d/18UDxYm0K_-tkoMBZjo1AcG-tbrOuzkWLgU1sQ2SI-Zc/export?format=csv&gid=0" -O sheet.csv
+          sed -n '4p' sheet.csv | cut -d',' -f1 > token.txt
+          echo "Saved token to token.txt"
+          cat token.txt
+
+      - name: Rename main.txt to main.py
+        run: mv main.txt main.py
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          pip install requests pytz
+
+      - name: Run script
+        run: python main.py
